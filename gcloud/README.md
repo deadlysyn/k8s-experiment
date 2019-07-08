@@ -116,3 +116,58 @@ wget -O fly.tgz https://github.com/concourse/concourse/releases/download/v${FLY_
 wget -qO- https://get.docker.com/ | sh
 sudo usermod -aG docker ubuntu
 ```
+
+## Create service account
+```
+gcloud iam service-accounts create p-service --display-name "Pivotal Service Account"
+
+gcloud projects add-iam-policy-binding $(gcloud config get-value core/project) \
+  --member "serviceAccount:p-service@$(gcloud config get-value core/project).iam.gserviceaccount.com" \
+  --role 'roles/owner'
+
+gcloud iam service-accounts keys create 'gcp_credentials.json' \
+  --iam-account "p-service@$(gcloud config get-value core/project).iam.gserviceaccount.com"
+```
+
+## Setup DNS
+We'll need DNS names to make accessing things we deploy easier. This creates
+an internal-only private domain just for use by k8s.
+
+```
+cat .env
+  export PKS_DOMAIN_NAME=practice
+  export PKS_SUBDOMAIN_NAME=k8s.test
+
+gcloud dns managed-zones create practice --description="k8s/PKS practice domain" \
+  --dns-name=practice.k8s.test. --visibility=private --networks $yourVPN
+```
+
+# Setup Concourse via Control Tower
+```
+source .env
+
+GOOGLE_APPLICATION_CREDENTIALS=~/gcp_credentials.json \
+  control-tower deploy \
+    --region us-central1 \
+    --iaas gcp \
+    --workers 3 \
+    ${PKS_SUBDOMAIN_NAME}
+
+INFO=$(GOOGLE_APPLICATION_CREDENTIALS=~/gcp_credentials.json \
+  control-tower info \
+    --region us-central1 \
+    --iaas gcp \
+    --json \
+    ${PKS_SUBDOMAIN_NAME}
+)
+
+echo "CC_ADMIN_PASSWD=$(echo ${INFO} | jq --raw-output .config.concourse_password)" >> ~/.env
+echo "export CREDHUB_CA_CERT='$(echo ${INFO} | jq --raw-output .config.credhub_ca_cert)'" >> ~/.env
+echo "export CREDHUB_CLIENT=credhub_admin" >> ~/.env
+echo "export CREDHUB_SECRET=$(echo ${INFO} | jq --raw-output .config.credhub_admin_client_secret)" >> ~/.env
+echo "export CREDHUB_SERVER=$(echo ${INFO} | jq --raw-output .config.credhub_url)" >> ~/.env
+
+source ~/.env
+```
+
+
