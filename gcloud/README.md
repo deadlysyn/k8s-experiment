@@ -170,4 +170,46 @@ echo "export CREDHUB_SERVER=$(echo ${INFO} | jq --raw-output .config.credhub_url
 source ~/.env
 ```
 
+# Download PKS and utils
 
+On your jumpbox...
+
+```
+export PIVNET_TOKEN="$yourToken" # UAA token from network.pivotal.io
+pivnet login --api-token=${PIVNET_TOKEN}
+
+pivnet products # explore to find slugs and globs
+
+PRODUCT_SLUG=pivotal-container-service
+pivnet releases \
+  --product-slug=${PRODUCT_SLUG}
+
+RELEASE_VERSION=1.4.1
+pivnet product-files \
+  --product-slug=${PRODUCT_SLUG} \
+  --release-version=${RELEASE_VERSION}
+
+pivnet download-product-files \
+  --product-slug=${PRODUCT_SLUG} \
+  --release-version=${RELEASE_VERSION} \
+  --glob='pks-linux-*'
+
+pivnet download-product-files \
+  --product-slug=${PRODUCT_SLUG} \
+  --release-version=${RELEASE_VERSION} \
+  --glob='kubectl-linux-*'
+
+chmod +x pks-linux-*
+chmod +x kubectl-linux-*
+sudo mv pks-linux-* /usr/local/bin/pks
+sudo mv kubectl-linux-* /usr/local/bin/kubectl
+```
+
+JSON output can be useful:
+
+```
+pivnet --format=json product-files \
+  --product-slug=${PRODUCT_SLUG} \
+  --release-version=${RELEASE_VERSION} \
+  | jq '.[] | {name: .name, key: .aws_object_key}'
+```
