@@ -1,5 +1,5 @@
 ---
-reource_types:
+resource_types:
 - name: pivnet
   type: docker-image
   source:
