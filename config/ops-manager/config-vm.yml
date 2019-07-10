@@ -13,3 +13,4 @@ opsman-configuration:
     boot_disk_size: 200
     public_ip: ((opsman-public-ip))
     private_ip: 10.0.0.2
+
