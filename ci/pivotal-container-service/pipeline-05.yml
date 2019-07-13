@@ -1,0 +1,383 @@
+---
+resource_types:
+- name: pivnet
+  type: docker-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tag: latest-final
+
+- name: gcs
+  type: docker-image
+  source:
+    repository: frodenas/gcs-resource
+
+resources:
+- name: daily-trigger
+  type: time
+  source:
+    interval: 24h
+
+- name: one-time-trigger
+  type: time
+  source:
+    interval: 999999h
+
+- name: config
+  type: git
+  source:
+    uri: ((config-uri))
+    branch: master
+    private_key: |
+      ((config-private-key))
+
+- name: platform-automation-pivnet
+  type: pivnet
+  source:
+    api_token: ((pivnet-api-token))
+    product_slug: platform-automation
+    product_version: 3\.0
+    sort_by: semver
+
+- name: state
+  type: gcs
+  source:
+    versioned_file: state.yml
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: platform-automation-tasks
+  type: gcs
+  source:
+    regexp: platform-automation-tasks-(.*).zip
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: platform-automation-image
+  type: gcs
+  source:
+    regexp: platform-automation-image-(.*).tgz
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: opsman-product
+  type: gcs
+  source:
+    regexp: ops-manager-gcp-*.yml
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: pks-product
+  type: gcs
+  source:
+    regexp: pivotal-container-service-(.*).pivotal
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: pks-stemcell
+  type: gcs
+  source:
+    regexp: pks-stemcell/light-bosh-stemcell-(.*)-google.*\.tgz
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: harbor-product
+  type: gcs
+  source:
+    regexp: harbor-container-registry-(.*).pivotal
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+- name: harbor-stemcell
+  type: gcs
+  source:
+    regexp: harbor-stemcell/light-bosh-stemcell-(.*)-google.*\.tgz
+    bucket: ((gcs-bucket))
+    json_key: |
+      ((gcp-credentials))
+
+jobs:
+- name: fetch-platform-automation
+  plan:
+  - get: platform-automation-pivnet
+    trigger: true
+  - in_parallel:
+    - put: platform-automation-tasks
+      params:
+        file: platform-automation-pivnet/*tasks*.zip
+    - put: platform-automation-image
+      params:
+        file: platform-automation-pivnet/*image*.tgz
+
+- name: fetch-opsman
+  plan:
+  - in_parallel:
+    - get: daily-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: config
+  - &credhub-interpolate-config
+    task: credhub-interpolate-config
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/credhub-interpolate.yml
+    params:
+      CREDHUB_CA_CERT: ((credhub-ca-cert))
+      CREDHUB_CLIENT: ((credhub-client))
+      CREDHUB_SECRET: ((credhub-secret))
+      CREDHUB_SERVER: ((credhub-server))
+      PREFIX: /concourse/main
+      INTERPOLATION_PATH: ((config-dir))
+    input_mapping:
+      files: config
+    output_mapping:
+      interpolated-files: config
+  - task: download-opsman-image
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((config-dir))/ops-manager/config-pivnet.yml
+  - in_parallel:
+    - put: opsman-product
+      params:
+        file: downloaded-product/*
+
+- name: fetch-pks
+  plan:
+  - in_parallel:
+    - get: daily-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: config
+  - *credhub-interpolate-config
+  - task: download-pks-product-and-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((config-dir))/pivotal-container-service/config-pivnet.yml
+    output_mapping: {downloaded-stemcell: pks-stemcell}
+  - in_parallel:
+    - put: pks-product
+      params:
+        file: downloaded-product/*.pivotal
+    - put: pks-stemcell
+      params:
+        file: pks-stemcell/*.tgz
+
+- name: fetch-harbor
+  plan:
+  - in_parallel:
+    - get: daily-trigger
+      trigger: true
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: config
+  - *credhub-interpolate-config
+  - task: download-harbor-product-and-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/download-product.yml
+    params:
+      CONFIG_FILE: ((config-dir))/harbor-container-registry/config-pivnet.yml
+    output_mapping: {downloaded-stemcell: harbor-stemcell}
+  - in_parallel:
+    - put: harbor-product
+      params:
+        file: downloaded-product/*.pivotal
+    - put: harbor-stemcell
+      params:
+        file: harbor-stemcell/*.tgz
+
+- name: install-opsman
+  serial: true
+  serial_groups: [ install ]
+  plan:
+  - in_parallel:
+    - get: platform-automation-image
+      params:
+        unpack: true
+    - get: one-time-trigger
+      trigger: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: opsman-product
+    - get: config
+    - get: state
+  - *credhub-interpolate-config
+  - task: create-vm
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/create-vm.yml
+    input_mapping:
+      image: opsman-product
+      state: state
+      config: config
+      vars: config
+    params:
+      OPSMAN_CONFIG_FILE: ((config-dir))/ops-manager/config-vm.yml
+  - put: state
+    params:
+      file: generated-state/state.yml
+  - task: configure-authentication
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-authentication.yml
+    attempts: 10
+    input_mapping:
+      env: config
+      config: config
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+      AUTH_CONFIG_FILE: config/ops-manager/auth.yml
+  - task: configure-director
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-director.yml
+    input_mapping:
+      config: config
+      env: config
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+      DIRECTOR_CONFIG_FILE: ((config-dir))/ops-manager/config.yml
+  - task: apply-director-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-director-changes.yml
+    input_mapping:
+      env: config
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+
+- name: upload-and-configure-pks
+  plan:
+  - in_parallel:
+    - get: platform-automation-image
+      passed:
+      - install-opsman
+      trigger: true
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: config
+    - get: pks-product
+    - get: pks-stemcell
+  - *credhub-interpolate-config
+  - task: upload-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      env: config
+      stemcell: pks-stemcell
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+  - task: upload-and-stage-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-and-stage-product.yml
+    input_mapping:
+      env: config
+      product: pks-product
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    input_mapping:
+      env: config
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+      CONFIG_FILE: ((config-dir))/pivotal-container-service/config.yml
+
+- name: upload-and-configure-harbor
+  plan:
+  - in_parallel:
+    - get: platform-automation-image
+      passed:
+      - install-opsman
+      trigger: true
+      params:
+        unpack: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: config
+    - get: harbor-product
+    - get: harbor-stemcell
+  - *credhub-interpolate-config
+  - task: upload-stemcell
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-stemcell.yml
+    input_mapping:
+      env: config
+      stemcell: harbor-stemcell
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+  - task: upload-and-stage-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/upload-and-stage-product.yml
+    input_mapping:
+      env: config
+      product: harbor-product
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+  - task: configure-product
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    input_mapping:
+      env: config
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
+      CONFIG_FILE: ((config-dir))/harbor-container-registry/config.yml
+
+- name: apply-product-changes
+  serial: true
+  plan:
+  - in_parallel:
+    - get: platform-automation-image
+      params:
+        unpack: true
+      passed:
+      - upload-and-configure-pks
+      - upload-and-configure-harbor
+      trigger: true
+    - get: platform-automation-tasks
+      params:
+        unpack: true
+    - get: config
+  - task: credhub-interpolate-config
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/credhub-interpolate.yml
+    params:
+      CREDHUB_CA_CERT: ((credhub-ca-cert))
+      CREDHUB_CLIENT: ((credhub-client))
+      CREDHUB_SECRET: ((credhub-secret))
+      CREDHUB_SERVER: ((credhub-server))
+      PREFIX: /concourse/main
+      INTERPOLATION_PATH: ((config-dir))
+    input_mapping:
+      files: config
+    output_mapping:
+      interpolated-files: config
+  - task: apply-changes
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/apply-changes.yml
+    input_mapping:
+      env: config
+    params:
+      ENV_FILE: ((config-dir))/ops-manager/env.yml
