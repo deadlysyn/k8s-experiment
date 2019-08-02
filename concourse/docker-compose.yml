@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  uaa:
+    image: pcfseceng/uaa
+    volumes: ["./config/uaa.yml:/uaa/uaa.yml"]
+    ports: ["8080:8080"]
+    restart: always
+
+  credhub:
+    image: orangeopensource/credhub
+    # image: pcfseceng/credhub
+    ports: ["9000:9000"]
+    links: ["uaa:uaa"]
+    depends_on: ["uaa"]
+    environment:
+      UAA_URL: http://localhost:8080/uaa
+      UAA_INTERNAL_URL: http://uaa:8080/uaa
+
+  concourse-db:
+    image: postgres
+    environment:
+      POSTGRES_DB: concourse
+      POSTGRES_PASSWORD: concourse_pass
+      POSTGRES_USER: concourse_user
+      PGDATA: /database
+
+  concourse:
+    image: concourse/concourse
+    command: quickstart
+    privileged: true
+    depends_on: [concourse-db,credhub]
+    ports: ["8081:8081"]
+    environment:
+      CONCOURSE_POSTGRES_HOST: concourse-db
+      CONCOURSE_POSTGRES_USER: concourse_user
+      CONCOURSE_POSTGRES_PASSWORD: concourse_pass
+      CONCOURSE_POSTGRES_DATABASE: concourse
+      CONCOURSE_EXTERNAL_URL: http://localhost:8081
+      CONCOURSE_ADD_LOCAL_USER: test:test
+      CONCOURSE_MAIN_TEAM_LOCAL_USER: test
+      CONCOURSE_WORKER_BAGGAGECLAIM_DRIVER: overlay
+
