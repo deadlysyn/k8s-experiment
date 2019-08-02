@@ -2,3 +2,6 @@
 *secrets*yml
 tile-configs
 .envrc
+*json
+*zip
+*gz
