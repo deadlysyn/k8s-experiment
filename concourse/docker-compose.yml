@@ -13,7 +13,6 @@ services:
     image: orangeopensource/credhub
     # image: pcfseceng/credhub
     ports: ["9000:9000"]
-    # links: ["uaa:uaa"]
     depends_on: ["uaa"]
     environment:
       UAA_URL: http://localhost:8080/uaa
@@ -33,7 +32,6 @@ services:
     image: concourse/concourse
     command: quickstart
     privileged: true
-    # links: ["credhub:credhub"]
     depends_on: [concourse-db,credhub]
     ports: ["8081:8080"]
     environment:
@@ -45,4 +43,7 @@ services:
       CONCOURSE_ADD_LOCAL_USER: test:test
       CONCOURSE_MAIN_TEAM_LOCAL_USER: test
       CONCOURSE_WORKER_BAGGAGECLAIM_DRIVER: overlay
-
+      CONCOURSE_CREDHUB_URL: "https://credhub:9000"
+      CONCOURSE_CREDHUB_INSECURE_SKIP_VERIFY: "true"
+      CONCOURSE_CREDHUB_CLIENT_ID: credhub_client
+      CONCOURSE_CREDHUB_CLIENT_SECRET: secret
