@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 
 services:
   uaa:
@@ -29,8 +29,9 @@ services:
     image: concourse/concourse
     command: quickstart
     privileged: true
+    links: ["credhub:credhub"]
     depends_on: [concourse-db,credhub]
-    ports: ["8081:8081"]
+    ports: ["8081:8080"]
     environment:
       CONCOURSE_POSTGRES_HOST: concourse-db
       CONCOURSE_POSTGRES_USER: concourse_user
