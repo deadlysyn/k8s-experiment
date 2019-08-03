@@ -2,12 +2,14 @@ version: '3.7'
 
 services:
   uaa:
+    container_name: uaa
     image: pcfseceng/uaa
     volumes: ["./config/uaa.yml:/uaa/uaa.yml"]
     ports: ["8080:8080"]
     restart: always
 
   credhub:
+    container_name: credhub
     image: orangeopensource/credhub
     # image: pcfseceng/credhub
     ports: ["9000:9000"]
@@ -18,6 +20,7 @@ services:
       UAA_INTERNAL_URL: http://uaa:8080/uaa
 
   concourse-db:
+    container_name: concourse-db
     image: postgres
     environment:
       POSTGRES_DB: concourse
@@ -26,6 +29,7 @@ services:
       PGDATA: /database
 
   concourse:
+    container_name: concourse
     image: concourse/concourse
     command: quickstart
     privileged: true
