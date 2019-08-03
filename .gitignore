@@ -5,3 +5,5 @@ tile-configs
 *json
 *zip
 *gz
+*credhub-export*
+*credhub-import*
