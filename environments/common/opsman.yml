@@ -1,0 +1,4 @@
+--
+vm_name: opsman-pks
+opsman-boot-disk-size: 300
+azure-cloud-name: AzureCloud

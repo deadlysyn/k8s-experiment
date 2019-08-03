@@ -1,0 +1,5 @@
+azure-location: centralus
+azure-resource-group: sandbox
+azure-storage-container: opsmanimage
+opsman-public-ip: 40.122.73.220
+opsman-private-ip: 10.0.8.4
