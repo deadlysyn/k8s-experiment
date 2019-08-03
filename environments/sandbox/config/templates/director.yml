@@ -1,0 +1,106 @@
+iaas-configurations:
+- additional_cloud_properties: {}
+  availability_mode: availability_zones
+  bosh_storage_account_name: ((bosh-storage-account-name))
+  client_id: ((azure-client-id))
+  client_secret: ((azure-client-secret))
+  cloud_storage_type: managed_disks
+  default_security_group: ((azure-resource-group))-bosh-deployed-vms-security-group
+  deployed_cloud_storage_type: managed_disks
+  environment: ((azure-cloud-name))
+  name: default
+  resource_group_name: ((azure-resource-group))
+  ssh_private_key: ((azure-ssh-private-key))
+  ssh_public_key: ((azure-ssh-public-key))
+  storage_account_type: Premium_LRS
+  subscription_id: ((azure-subscription-id))
+  tenant_id: ((azure-tenant-id))
+network-assignment:
+  network:
+    name: ((azure-resource-group))-infrastructure-subnet
+  other_availability_zones: []
+  singleton_availability_zone:
+    name: ((az1-name))
+networks-configuration:
+  icmp_checks_enabled: false
+  networks:
+  - name: infrastructure
+    subnets:
+    - iaas_identifier: ((azure-resource-group))-virtual-network/((azure-resource-group))-infrastructure-subnet
+      cidr: ((infra-network-cidr))
+      dns: ((dns))
+      gateway: ((infra-network-gw))
+      reserved_ip_ranges: ((infra-network-reserved-ranges))
+      availability_zone_names:
+      - ((az1-name))
+      - ((az2-name))
+      - ((az3-name))
+  - name: pks
+    subnets:
+    - iaas_identifier: ((azure-resource-group))-virtual-network/((azure-resource-group))-pks-subnet
+      cidr: ((pks-network-cidr))
+      dns: ((dns))
+      gateway: ((pas-network-gw))
+      reserved_ip_ranges: ((pas-network-reserved-ranges))
+      availability_zone_names:
+      - ((az1-name))
+      - ((az2-name))
+      - ((az3-name))
+  - name: services
+    subnets:
+    - iaas_identifier: ((azure-resource-group))-virtual-network/((azure-resource-group))-services-subnet
+      cidr: ((services-network-cidr))
+      dns: ((dns))
+      gateway: ((services-network-gw))
+      reserved_ip_ranges: ((services-network-reserved-ranges))
+      availability_zone_names:
+      - ((az1-name))
+      - ((az2-name))
+      - ((az3-name))
+properties-configuration:
+  director_configuration:
+    blobstore_type: local
+    bosh_recreate_on_next_deploy: false
+    bosh_recreate_persistent_disks_on_next_deploy: false
+    database_type: internal
+    director_worker_count: 5
+    encryption:
+      keys: []
+      providers: []
+    hm_emailer_options:
+      enabled: false
+    hm_pager_duty_options:
+      enabled: false
+    identification_tags: {}
+    job_configuration_on_tmpfs: false
+    keep_unreachable_vms: false
+    local_blobstore_options:
+      tls_enabled: true
+    ntp_servers_string: ((ntp))
+    post_deploy_enabled: true
+    resurrector_enabled: true
+    retry_bosh_deploys: true
+    skip_director_drain: false
+  dns_configuration:
+    excluded_recursors: []
+    handlers: []
+  security_configuration:
+    generate_vm_passwords: true
+    opsmanager_root_ca_trusted_certs: true
+  syslog_configuration:
+    enabled: false
+resource-configuration:
+  compilation:
+    instances: automatic
+    instance_type:
+      id: automatic
+    internet_connected: false
+  director:
+    instances: automatic
+    persistent_disk:
+      size_mb: "307200"
+    instance_type:
+      id: automatic
+    internet_connected: false
+vmextensions-configuration: []
+vmtypes-configuration: {}

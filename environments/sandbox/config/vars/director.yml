@@ -1,0 +1,14 @@
+---
+azure-resource-group: sandbox
+
+infra-network-cidr: 10.0.8.0/26
+infra-network-gw: 10.0.8.1
+infra-network-reserved-ranges: 10.0.8.1-10.0.8.9
+
+pks-network-cidr: 10.0.12.0/22
+pks-network-gw: 10.0.12.1
+pks-network-reserved-ranges: 10.0.12.1-10.0.12.9
+
+services-network-cidr: 10.0.16.0/22
+services-network-gw: 10.0.16.1
+services-network-reserved-ranges: 10.0.16.1-10.0.16.9
