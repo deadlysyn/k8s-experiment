@@ -60,13 +60,14 @@ jobs:
     image: platform-automation-image
     file: platform-automation-tasks/tasks/credhub-interpolate.yml
     params: &credhub_interpolate_params
-      CREDHUB_SERVER: ((credhub_server))
-      CREDHUB_CA_CERT: ((credhub_ca))
-      CREDHUB_CLIENT: ((credhub_client))
-      CREDHUB_SECRET: ((credhub_secret))
+      # CREDHUB_SERVER: ((credhub_server))
+      # CREDHUB_CA_CERT: ((credhub_ca))
+      # CREDHUB_CLIENT: ((credhub_client))
+      # CREDHUB_SECRET: ((credhub_secret))
       PREFIX: '/concourse/((foundation))'
       INTERPOLATION_PATHS: 'environments/((foundation))/config'
       SKIP_MISSING: true
+      DEV_MODE: true
     input_mapping:
       files: configuration
 
