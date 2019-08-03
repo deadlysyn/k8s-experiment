@@ -11,7 +11,7 @@ services:
     image: orangeopensource/credhub
     # image: pcfseceng/credhub
     ports: ["9000:9000"]
-    links: ["uaa:uaa"]
+    # links: ["uaa:uaa"]
     depends_on: ["uaa"]
     environment:
       UAA_URL: http://localhost:8080/uaa
@@ -29,7 +29,7 @@ services:
     image: concourse/concourse
     command: quickstart
     privileged: true
-    links: ["credhub:credhub"]
+    # links: ["credhub:credhub"]
     depends_on: [concourse-db,credhub]
     ports: ["8081:8080"]
     environment:
