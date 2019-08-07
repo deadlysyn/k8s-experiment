@@ -1,5 +1,4 @@
----
 pivnet-api-token: ((pivnet-api-token))
 pivnet-file-glob: "ops-manager-azure*.yml"
 pivnet-product-slug: "ops-manager"
-product-version: "2.6.5"
+product-version: "2.6.6"
