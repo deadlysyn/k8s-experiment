@@ -26,3 +26,4 @@ optional/add-uaa-ldap-last_name_attribute.yml
 optional/add-uaa-ldap-server_ssl_cert.yml
 optional/add-uaa-ldap-server_ssl_cert_alias.yml
 optional/add-vm_extensions.yml
+resource/pivotal-container-service_elb_names.yml
