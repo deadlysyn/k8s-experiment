@@ -71,6 +71,8 @@ product-properties:
     value: ((pks_api_hostname))
   .properties.plan1_selector:
     value: Plan Active
+  .properties.plan1_selector.active.allow_privileged_containers:
+    value: ((plan1_selector/active/allow_privileged_containers))
   .properties.plan1_selector.active.description:
     value: ((plan1_selector/active/description))
   .properties.plan1_selector.active.errand_vm_type:
@@ -98,6 +100,8 @@ product-properties:
   .properties.plan2_selector:
     selected_option: active
     value: Plan Active
+  .properties.plan2_selector.active.allow_privileged_containers:
+    value: ((plan2_selector/active/allow_privileged_containers))
   .properties.plan2_selector.active.description:
     value: ((plan2_selector/active/description))
   .properties.plan2_selector.active.errand_vm_type:
@@ -125,6 +129,8 @@ product-properties:
   .properties.plan3_selector:
     selected_option: active
     value: Plan Active
+  .properties.plan3_selector.active.allow_privileged_containers:
+    value: ((plan3_selector/active/allow_privileged_containers))
   .properties.plan3_selector.active.description:
     value: ((plan3_selector/active/description))
   .properties.plan3_selector.active.errand_vm_type:
