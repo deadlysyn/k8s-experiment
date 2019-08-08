@@ -1,9 +1,7 @@
-*credentials.json
-*secrets*yml
+*credentials*
+*creds*
+*secrets*.yml
+*secrets*.json
 tile-configs
+credhub-export.yml
 .envrc
-*json
-*zip
-*gz
-*credhub-export*
-*credhub-import*
