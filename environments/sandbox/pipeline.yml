@@ -20,8 +20,8 @@ resources:
 - name: installation
   type: azure-blobstore
   source:
-    storage_account_name: ((storage-account-name))
-    storage_account_key: ((storage-account-access-key))
+    storage_account_name: ((terraform-storage-account-name))
+    storage_account_key: ((terraform-storage-account-key))
     container: opsman-installation
     versioned_file: installation.zip
 
@@ -29,20 +29,20 @@ resources:
   type: git
   source:
     uri: ((platform-automation-repo))
-    branch: ((platform-automation-branch))
+    branch: master
     private_key: ((platform-automation-private-key))
 
 - name: state
   type: git
   source:
     uri: ((platform-automation-repo))
-    branch: ((platform-automation-branch))
+    branch: master
     private_key: ((platform-automation-private-key))
 
 jobs:
 - name: install-opsman
   plan:
-  - aggregate:
+  - in_parallel:
     - get: configuration
     - get: state
     - get: platform-automation-image
@@ -60,10 +60,10 @@ jobs:
     image: platform-automation-image
     file: platform-automation-tasks/tasks/credhub-interpolate.yml
     params: &credhub_interpolate_params
-      # CREDHUB_SERVER: ((credhub_server))
-      # CREDHUB_CA_CERT: ((credhub_ca))
-      # CREDHUB_CLIENT: ((credhub_client))
-      # CREDHUB_SECRET: ((credhub_secret))
+      CREDHUB_SERVER: ((credhub_server))
+      CREDHUB_CA_CERT: ((credhub_ca))
+      CREDHUB_CLIENT: ((credhub_client))
+      CREDHUB_SECRET: ((credhub_secret))
       PREFIX: '/concourse/((environment))'
       INTERPOLATION_PATHS: 'environments/((environment))/config'
       SKIP_MISSING: true
@@ -147,7 +147,7 @@ jobs:
 
 - name: export-installation
   plan:
-  - aggregate:
+  - in_parallel:
     - get: configuration
       trigger: true
       passed: [ install-opsman ]
@@ -183,7 +183,7 @@ jobs:
 
 - name: upgrade-opsman
   plan:
-  - aggregate:
+  - in_parallel:
     - get: configuration
       trigger: true
       passed: [ export-installation ]
@@ -237,4 +237,117 @@ jobs:
     input_mapping:
       env: interpolated-files
     params:
+      ENV_FILE: environments/((environment))/config/secrets/env.yml
+
+- name: pivotal-container-service
+  serial: true
+  plan:
+  - in_parallel:
+    - get: configuration
+      trigger: true
+      passed: [ upgrade-opsman ]
+    - get: platform-automation-image
+      resource: platform-automation
+      params:
+        unpack: true
+        globs: ["*image*"]
+    - get: platform-automation-tasks
+      resource: platform-automation
+      params:
+        unpack: true
+        globs: ["*tasks*"]
+
+  - task: credhub-interpolate
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/credhub-interpolate.yml
+    params: *credhub_interpolate_params
+    input_mapping:
+      files: configuration
+
+  - task: download-stage-tile-stemcell
+    image: platform-automation-image
+    file: configuration/ci/tasks-proposed/download-stage-tile-stemcell.yml
+    input_mapping:
+      config: configuration
+      download-config: interpolated-files
+      env: interpolated-files
+      vars: interpolated-files
+      secrets: interpolated-files
+    params:
+      DOWNLOAD_CONFIG_FILE: environments/((environment))/config/versions/pivotal-container-service.yml
+      DOWNLOAD_STEMCELL_CONFIG_FILE: environments/((environment))/config/versions/pivotal-container-service-stemcell.yml
+      CONFIG_FILE: environments/((environment))/config/templates/pivotal-container-service.yml
+      ENV_FILE: environments/((environment))/config/secrets/env.yml
+      VARS_FILES: vars/environments/((environment))/config/secrets/pivnet.yml
+
+  - task: configure
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/configure-product.yml
+    input_mapping:
+      config: configuration
+      env: interpolated-files
+      vars: configuration
+      secrets: interpolated-files
+    params:
+      CONFIG_FILE: environments/((environment))/config/templates/pivotal-container-service.yml
+      VARS_FILES: |
+        vars/environments/((environment))/config/defaults/pivotal-container-service.yml
+        vars/environments/common/pivotal-container-service.yml
+        vars/environments/((environment))/config/vars/pivotal-container-service.yml
+        secrets/environments/((environment))/config/secrets/pivotal-container-service.yml
+      ENV_FILE: environments/((environment))/config/secrets/env.yml
+
+  - task: apply-product-changes
+    image: platform-automation-image
+    file: configuration/ci/tasks-proposed/apply-product-changes.yml
+    input_mapping:
+      config: configuration
+      env: interpolated-files
+    params:
+      CONFIG_FILE: environments/((environment))/config/templates/pivotal-container-service.yml
+      ENV_FILE: environments/((environment))/config/secrets/env.yml
+
+- name: pivotal-container-service-errands
+  plan:
+  - aggregate:
+    - get: configuration
+      trigger: true
+      passed: [ pivotal-container-service ]
+    - get: platform-automation-image
+      resource: platform-automation
+      params:
+        unpack: true
+        globs: ["*image*"]
+    - get: platform-automation-tasks
+      resource: platform-automation
+      params:
+        unpack: true
+        globs: ["*tasks*"]
+
+  - task: credhub-interpolate
+    image: platform-automation-image
+    file: platform-automation-tasks/tasks/credhub-interpolate.yml
+    params: *credhub_interpolate_params
+    input_mapping:
+      files: configuration
+
+  - task: upgrade-all-service-instances
+    image: platform-automation-image
+    file: configuration/ci/tasks-proposed/run-errand.yml
+    input_mapping:
+      config: configuration
+      env: interpolated-files
+    params:
+      CONFIG_FILE: environments/((environment))/config/templates/pivotal-container-service.yml
+      ERRAND_NAME: upgrade-all-service-instances
+      ENV_FILE: environments/((environment))/config/secrets/env.yml
+  - task: smoke-tests
+    image: platform-automation-image
+    file: configuration/ci/tasks-proposed/run-errand.yml
+    input_mapping:
+      config: configuration
+      env: interpolated-files
+    params:
+      CONFIG_FILE: environments/((environment))/config/templates/pivotal-container-service.yml
+      ERRAND_NAME: smoke-tests
       ENV_FILE: environments/((environment))/config/secrets/env.yml
