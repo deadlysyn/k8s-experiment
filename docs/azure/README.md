@@ -52,12 +52,12 @@ wget -O terraform.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/ter
   sudo mv terraform /usr/local/bin && \
   rm terraform.zip
 
-OM_VERSION=1.0.0
-wget -O om https://github.com/pivotal-cf/om/releases/download/${OM_VERSION}/om-linux && \
+OM_VERSION=3.0.0
+wget -O om https://github.com/pivotal-cf/om/releases/download/${OM_VERSION}/om-linux-${OM_VERSION} && \
   chmod +x om && \
   sudo mv om /usr/local/bin/
 
-PN_VERSION=0.0.58
+PN_VERSION=0.0.60
 wget -O pivnet https://github.com/pivotal-cf/pivnet-cli/releases/download/v${PN_VERSION}/pivnet-linux-amd64-${PN_VERSION} && \
   chmod +x pivnet && \
   sudo mv pivnet /usr/local/bin/
@@ -262,4 +262,4 @@ az identity create -g $AZURE_RESOURCE_GROUP -n pks-worker
 
 If all else fails, go into console > resource group > iam and associate `Storage Account Contributor, Network Contributor, and Virtual Machine Contributor` with `pks-master` and `Storage Account Contributor` with `pks-worker`.
 
-Now you can follow https://docs.pivotal.io/pks/1-4/installing-pks-azure.html
+That was a lot of work for an opsman.  Now you can follow https://docs.pivotal.io/pks/1-4/installing-pks-azure.html
