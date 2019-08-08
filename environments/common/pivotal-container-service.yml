@@ -1,0 +1,61 @@
+singleton_availability_zone: zone-1
+az2_name: zone-2
+az3_name: zone-3
+network_name: pks
+service_network_name: services
+uaa_oidc: true
+
+cloud_provider/azure/azure_cloud_name: AzurePublicCloud
+cloud_provider/azure/azure_master_managed_identity: pks-master
+cloud_provider/azure/azure_worker_managed_identity: pks-worker
+cloud_provider/azure/primary_availability_set: zone-1
+
+# plans
+plan1_selector/active/name: small
+plan1_selector/active/description: 'Lightweight kubernetes cluster. Not recommended for production workloads.'
+plan1_selector/active/master_instances: 1
+plan1_selector/active/master_vm_type: automatic
+plan1_selector/active/master_persistent_disk_type: automatic
+plan1_selector/active/master_az_placement: zone-1
+plan1_selector/active/max_worker_instances: 50
+plan1_selector/active/worker_instances: 6
+plan1_selector/active/worker_vm_type: automatic
+plan1_selector/active/worker_az_placement: ['zone-1','zone-2','zone-3']
+plan1_selector/active/worker_persistent_disk_type: automatic
+plan1_selector/active/errand_vm_type: automatic
+plan1_selector/active/allow_privileged_containers: false
+
+plan2_selector/active/name: medium
+plan2_selector/active/description: 'Medium kubernetes cluster suitable for more pods.'
+plan2_selector/active/master_instances: 3
+plan2_selector/active/master_vm_type: automatic
+plan2_selector/active/master_persistent_disk_type: "102400"
+plan2_selector/active/master_az_placement: ['zone-1','zone-2','zone-3']
+plan2_selector/active/max_worker_instances: 50
+plan2_selector/active/worker_instances: 15
+plan2_selector/active/worker_vm_type: automatic
+plan2_selector/active/worker_az_placement: ['zone-1','zone-2','zone-3']
+plan2_selector/active/worker_persistent_disk_type: "102400"
+plan2_selector/active/errand_vm_type: automatic
+plan2_selector/active/allow_privileged_containers: false
+
+plan3_selector/active/name: large
+plan3_selector/active/description: 'Large kubernetes cluster for more demanding workloads.'
+plan3_selector/active/master_instances: 3
+plan3_selector/active/master_vm_type: automatic
+plan3_selector/active/master_persistent_disk_type: "102400"
+plan3_selector/active/master_az_placement: ['zone-1','zone-2','zone-3']
+plan3_selector/active/max_worker_instances: 50
+plan3_selector/active/worker_instances: 30
+plan3_selector/active/worker_vm_type: automatic
+plan3_selector/active/worker_az_placement: ['zone-1','zone-2','zone-3']
+plan3_selector/active/worker_persistent_disk_type: "102400"
+plan3_selector/active/errand_vm_type: automatic
+plan3_selector/active/allow_privileged_containers: false
+
+# errands - run these later as bosh tasks
+pks-nsx-t-precheck_post_deploy_state: off
+smoke-tests_post_deploy_state: off
+upgrade-all-service-instances_post_deploy_state: off
+wavefront-alert-creation_post_deploy_state: off
+wavefront-alert-deletion_pre_delete_state: off
