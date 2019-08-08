@@ -1,2 +1,2 @@
---
 environment: sandbox
+platform-automation-repo: git@github.com:deadlysyn/k8s-experiment.git
