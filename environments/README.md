@@ -38,3 +38,5 @@ foundation: sandbox
 From the `environments` directory:
 
 `fly -t ${environment} sp -p ${pipeline_name} -c ${environment}/pipeline.yml -l ${environment}/pipeline-params.yml`
+
+![starter pks pipeline](https://raw.githubusercontent.com/deadlysyn/k8s-experiment/master/assets/pipeline.png)
