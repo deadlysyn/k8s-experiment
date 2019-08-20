@@ -40,8 +40,8 @@ networks-configuration:
     - iaas_identifier: ((azure-resource-group))-virtual-network/((azure-resource-group))-pks-subnet
       cidr: ((pks-network-cidr))
       dns: ((dns))
-      gateway: ((pas-network-gw))
-      reserved_ip_ranges: ((pas-network-reserved-ranges))
+      gateway: ((pks-network-gw))
+      reserved_ip_ranges: ((pks-network-reserved-ranges))
       availability_zone_names:
       - ((az1-name))
       - ((az2-name))
