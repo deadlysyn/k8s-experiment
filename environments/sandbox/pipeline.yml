@@ -67,7 +67,6 @@ jobs:
       PREFIX: '/concourse/((environment))'
       INTERPOLATION_PATHS: 'environments/((environment))/config'
       SKIP_MISSING: true
-      DEV_MODE: true
     input_mapping:
       files: configuration
 
