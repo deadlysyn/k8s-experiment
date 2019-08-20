@@ -1,4 +1,3 @@
----
 azure-resource-group: sandbox
 
 infra-network-cidr: 10.0.8.0/26
